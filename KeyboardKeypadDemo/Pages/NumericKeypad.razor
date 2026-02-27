@@ -1,0 +1,113 @@
+﻿@inject DialogService Dialog
+
+<div class="num-container">
+
+    <input class="num-display"
+           value="@Value"
+           readonly
+           autofocus
+           @onkeydown="OnKeyDown" />
+
+    <div class="num-grid">
+        @foreach (var n in Digits)
+        {
+            <button @onclick="() => Add(n)">@n</button>
+        }
+
+        <button @onclick="Decimal">.</button>
+        <button @onclick="Backspace">⌫</button>
+        <button class="ok" @onclick="Submit">OK</button>
+    </div>
+
+</div>
+
+@code {
+    [Parameter] public string Value { get; set; } = "";
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+
+    string[] Digits = { "7","8","9","4","5","6","1","2","3","0" };
+
+    void Add(string d) => Value += d;
+
+    void Decimal()
+    {
+        if (!Value.Contains("."))
+            Value += ".";
+    }
+
+    void Backspace()
+    {
+        if (!string.IsNullOrEmpty(Value))
+            Value = Value[..^1];
+    }
+
+    async Task Submit()
+    {
+        await ValueChanged.InvokeAsync(Value);
+        Dialog.Close(Value);
+    }
+
+    // ✅ PHYSICAL KEYBOARD HANDLING
+    void OnKeyDown(KeyboardEventArgs e)
+    {
+        // Digits 0–9
+        if (e.Key.Length == 1 && char.IsDigit(e.Key[0]))
+        {
+            Value += e.Key;
+            return;
+        }
+
+        switch (e.Key)
+        {
+            case ".":
+            case "Decimal":
+                Decimal();
+                break;
+
+            case "Backspace":
+                Backspace();
+                break;
+
+            case "Enter":
+                _ = Submit();
+                break;
+
+            case "Escape":
+                Dialog.Close(null);
+                break;
+        }
+    }
+}
+
+
+<style>
+    .num-container {
+    background: #111;
+    padding: 16px;
+}
+
+.num-display {
+    width: 100%;
+    font-size: 24px;
+    margin-bottom: 10px;
+    text-align: right;
+}
+
+.num-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+
+.num-grid button {
+    padding: 18px;
+    font-size: 22px;
+}
+
+.num-grid .ok {
+    grid-column: span 3;
+    background: #2196f3;
+    color: white;
+}
+
+</style>

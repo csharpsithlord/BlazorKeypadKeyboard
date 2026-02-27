@@ -1,0 +1,190 @@
+﻿@inject DialogService Dialog
+
+<div class="vk-container">
+
+    <input class="vk-input"
+       value="@(IsPassword
+           ? new string('•', Value?.Length ?? 0)
+           : Value)"
+       readonly
+       autofocus
+       @onkeydown="OnKeyDown" />
+
+    @foreach (var row in CurrentLayout)
+    {
+      <div class="vk-row">
+        @foreach (var k in row)
+        {
+            <button class="vk-key"
+                    @onclick="() => Press(k)">
+                @k
+            </button>
+        }
+      </div>
+     }
+
+    <div class="vk-row">
+        <button class="vk-key wide" @onclick="ToggleCaps">
+            @(Caps ? "Caps On" : "Caps")
+        </button>
+
+        <button class="vk-key wide" @onclick="ToggleSymbols">
+            @(Symbols ? "ABC" : "123")
+        </button>
+
+        <button class="vk-key wide" @onclick="Backspace">⌫</button>
+    </div>
+
+    <div class="vk-row">
+        <button class="vk-key space" @onclick="Space">Space</button>
+    </div>
+
+    <div class="vk-row">
+        <button class="vk-key wide clear" @onclick="Clear">Clear</button>
+        <button class="vk-key wide ok" @onclick="Submit">OK</button>
+    </div>
+
+</div>
+
+@code {
+    [Parameter]
+    public string Value { get; set; } = string.Empty;
+
+    [Parameter]
+    public bool IsPassword { get; set; }
+
+    [Parameter]
+    public EventCallback<string> ValueChanged { get; set; }
+
+    bool Caps;
+    bool Symbols;
+
+    string[][] LettersLower =
+    {
+        new[] { "q","w","e","r","t","y","u","i","o","p" },
+        new[] { "a","s","d","f","g","h","j","k","l" },
+        new[] { "z","x","c","v","b","n","m" }
+    };
+
+    string[][] LettersUpper =>
+        LettersLower.Select(r => r.Select(k => k.ToUpper()).ToArray()).ToArray();
+
+    string[][] Numbers =
+    {
+        new[] { "1","2","3","4","5","6","7","8","9","0" },
+        new[] { "-","/",";",":","(",")","$","&","@" },
+        new[] { ".","?","!","'","\"" }
+    };
+
+    string[][] CurrentLayout =>
+        Symbols ? Numbers :
+        Caps ? LettersUpper :
+        LettersLower;
+
+    void Press(string key) => Value += key;
+    void Space() => Value += " ";
+
+    void Backspace()
+    {
+        if (!string.IsNullOrEmpty(Value))
+            Value = Value[..^1];
+    }
+
+    void Clear() => Value = "";
+
+    void ToggleCaps() => Caps = !Caps;
+    void ToggleSymbols() => Symbols = !Symbols;
+
+    async Task Submit()
+    {
+        await ValueChanged.InvokeAsync(Value);
+        Dialog.Close(Value);
+    }
+
+    void OnKeyDown(KeyboardEventArgs e)
+{
+    // Letters / numbers / symbols
+    if (!string.IsNullOrEmpty(e.Key) && e.Key.Length == 1)
+    {
+        Value += Caps ? e.Key.ToUpper() : e.Key;
+        return;
+    }
+
+    switch (e.Key)
+    {
+        case "Backspace":
+            Backspace();
+            break;
+
+        case "Enter":
+            _ = Submit();
+            break;
+
+        case " ":
+        case "Spacebar":
+            Space();
+            break;
+
+        case "Escape":
+            Dialog.Close(null);
+            break;
+
+        case "CapsLock":
+            ToggleCaps();
+            break;
+    }
+}
+}
+
+
+<style>
+   .vk-container {
+    background: #1e1e1e;
+    padding: 12px;
+    border-radius: 8px;
+}
+
+.vk-input {
+    width: 100%;
+    font-size: 20px;
+    padding: 6px;
+    margin-bottom: 10px;
+}
+
+.vk-row {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 6px;
+}
+
+.vk-key {
+    margin: 4px;
+    padding: 12px 16px;
+    font-size: 18px;
+    background: #333;
+    color: white;
+    border-radius: 6px;
+    min-width: 48px;
+}
+
+.vk-key:hover {
+    background: #555;
+}
+
+.vk-key.wide {
+    flex: 1;
+}
+
+.vk-key.space {
+    flex: 3;
+}
+
+.vk-key.ok {
+    background: #4caf50;
+}
+
+.vk-key.clear {
+    background: #f44336;
+}
+
+</style>

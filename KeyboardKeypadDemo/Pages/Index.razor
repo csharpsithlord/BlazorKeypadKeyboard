@@ -1,0 +1,111 @@
+﻿@page "/"
+@using Radzen
+@using Radzen.Blazor
+@inject DialogService Dialog
+
+<h3>Keyboard / Keypad Demo</h3>
+
+<!-- NORMAL TEXT -->
+<RadzenTextBox @bind-Value="TextValue"
+               Placeholder="Tap to type"
+               Style="width:300px"
+               @onfocus="OpenKeyboard" />
+
+<br /><br />
+
+<!-- PASSWORD -->
+<RadzenPassword @bind-Value="PasswordValue"
+                Placeholder="Tap for password"
+                Style="width:300px"
+                @onfocus="OpenPasswordKeyboard" />
+
+<br /><br />
+
+<!-- NUMERIC -->
+<div tabindex="0"
+     style="display:inline-block"
+     @onfocus="OpenNumeric"
+     @onclick="OpenNumeric">
+
+    <RadzenNumeric @bind-Value="NumberValue"
+                   Style="width:300px"
+                   ReadOnly="true" />
+</div>
+
+@code {
+    string TextValue = string.Empty;
+    string PasswordValue = string.Empty;
+    decimal? NumberValue;
+
+    async Task OpenKeyboard()
+    {
+        var result = await Dialog.OpenAsync<VirtualKeyboard>(
+            "Keyboard",
+            new Dictionary<string, object>
+            {
+                { "Value", TextValue ?? string.Empty },
+                { "IsPassword", false }
+            },
+            new DialogOptions
+            {
+                Width = "700px",
+                Height = "600px",
+                CloseDialogOnOverlayClick = false
+            }
+        );
+
+        if (result != null)
+            TextValue = result.ToString();
+    }
+
+    async Task OpenPasswordKeyboard()
+    {
+        var result = await Dialog.OpenAsync<VirtualKeyboard>(
+            "Enter Password",
+            new Dictionary<string, object>
+            {
+                { "Value", PasswordValue ?? string.Empty },
+                { "IsPassword", true }
+            },
+            new DialogOptions
+            {
+                Width = "700px",
+                Height = "600px",
+                CloseDialogOnOverlayClick = false
+            }
+        );
+
+        if (result != null)
+            PasswordValue = result.ToString();
+    }
+
+    async Task OpenNumeric()
+    {
+    var result = await Dialog.OpenAsync<NumericKeypad>(
+        "Keypad",
+        new Dictionary<string, object>
+        {
+            { "Value", NumberValue?.ToString() ?? string.Empty }
+        },
+        new DialogOptions
+        {
+            Width = "350px",
+            CloseDialogOnOverlayClick = false
+        }
+    );
+
+    // 👇 User cancelled or entered nothing
+    if (result == null)
+        return;
+
+    var text = result.ToString();
+
+    if (string.IsNullOrWhiteSpace(text))
+        return;
+
+    if (decimal.TryParse(text, out decimal v))
+    {
+        NumberValue = v;
+    }
+   }
+}
